@@ -26,10 +26,19 @@ GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
 PDF_PASSWORD = os.getenv('PDF_PASSWORD')
 
 def makeHTML():
+    """
+    This function extracts data from the Google Sheet and formats it in HTML
+    :return:
+    """
 
+    # The range of cells containing data
     RANGE_NAME = 'Members!A2:T100'
+
+    # Get the data
     result = service.spreadsheets().values().get(spreadsheetId=GOOGLE_SHEET_ID,
                                                  range=RANGE_NAME).execute()
+
+    #TODO: If no data was found, we should probably raise an exception!!
     values = result.get('values', [])
     if not values:
         print('No data found.')
@@ -56,7 +65,7 @@ def makeHTML():
             outfile.write('%s<br>\n%s<br>\n%s<br>\n' % (row[11], row[12], row[13]))
 
 
-            outfile.write('</li><br>')
+            outfile.write('<br></li>')
 
 
         outfile.write('</ul></body></html>')
@@ -64,14 +73,19 @@ def makeHTML():
 
 
 def makePDF():
+    """
+    This function converts the HTML file into a PDF
+    :return:
+    """
 
     pdfkit.from_file('./directory.html', './directory.pdf')
 
 
 def protectPDF():
-    ##
-    ## Password protect the PDF
-    ##
+    """
+    This function encrypts the PDF and adds password protection
+    :return:
+    """
 
     in_file = open("./directory.pdf", "rb")
     input_pdf = PdfFileReader(in_file)
@@ -91,9 +105,10 @@ def protectPDF():
     in_file.close()
 
 def uploadToS3():
-    ##
-    ## Upload file to S3 bucket
-    ##
+    """
+    This function uploads the PDF to S3
+    :return:
+    """
 
     s3resource = boto3.resource('s3')
 
