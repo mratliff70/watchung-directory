@@ -6,7 +6,7 @@ from apiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file as oauth_file, client, tools
 import pdfkit
-from PyPDF2 import PdfFileReader, PdfFileWriter
+from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
 import boto3
 import os
 
@@ -31,8 +31,9 @@ def makeHTML():
     :return:
     """
 
-    # The range of cells containing data
-    RANGE_NAME = 'Members!A2:T100'
+    # The range of cells containing member data
+    RANGE_NAME = 'Members!A2:U100'
+
 
     # Get the data
     result = service.spreadsheets().values().get(spreadsheetId=GOOGLE_SHEET_ID,
@@ -50,22 +51,31 @@ def makeHTML():
         #print('Firstname, Lastname:')
         for row in values:
 
-            # Print the names
-            # If the second member's first name is present without a last name, then we assume the last name is the same
-            if row[7] and not row[6]:
-                outfile.write('<li> %s & %s %s<br>\n' % (row[1], row[7], row[0]))
-            # If the second member's first and last name are present
-            elif row[7] and row[6]:
-                outfile.write('<li> %s %s & %s %s<br>\n' % (row[1], row[0], row[7], row[6]))
-            # Otherwise, just print the first person's name
-            else:
-                outfile.write('<li> %s %s<br>\n' % (row[1], row[0]))
+            if row[20] == 'Yes':
 
-            # Print the address
-            outfile.write('%s<br>\n%s<br>\n%s<br>\n' % (row[11], row[12], row[13]))
+                # Print the names
+                # If the second member's first name is present without a last name, then we assume the last name is the same
+                if row[7] and not row[6]:
+                    outfile.write('<li> %s & %s %s<br>\n' % (row[1], row[7], row[0]))
+                # If the second member's first and last name are present
+                elif row[7] and row[6]:
+                    outfile.write('<li> %s %s & %s %s<br>\n' % (row[1], row[0], row[7], row[6]))
+                # Otherwise, just print the first person's name
+                else:
+                    outfile.write('<li> %s %s<br>\n' % (row[1], row[0]))
+
+                # Print the address
+                outfile.write('%s<br>\n%s, %s %s<br>\n' % (row[11], row[12], row[13], row[14]))
+
+                # Print 1st person's info name: phone number, e-mail
+                outfile.write('%s: %s %s<br>\n' % (row[1], row[3], row[2]))
+
+                # Print 2nd person's info if there is any
+                if row[7] and (row[9] or row[8]):
+                    outfile.write('%s: %s %s<br>\n' % (row[7], row[9], row[8]))
 
 
-            outfile.write('<br></li>')
+                outfile.write('<br></li>')
 
 
         outfile.write('</ul></body></html>')
@@ -80,6 +90,19 @@ def makePDF():
 
     pdfkit.from_file('./directory.html', './directory.pdf')
 
+def addCoverpage():
+    """
+    Add coverpage to PDF
+    :return:
+    """
+    pdf_merger = PdfFileMerger()
+
+    pdf_merger.append('./2018CoverPage.pdf')
+    pdf_merger.append('./directory.pdf')
+
+    with open('./directorywcover.pdf', 'wb') as fileobj:
+        pdf_merger.write(fileobj)
+
 
 def protectPDF():
     """
@@ -87,7 +110,7 @@ def protectPDF():
     :return:
     """
 
-    in_file = open("./directory.pdf", "rb")
+    in_file = open("./directorywcover.pdf", "rb")
     input_pdf = PdfFileReader(in_file)
 
     numpages = input_pdf.getNumPages()
@@ -128,6 +151,8 @@ if __name__ == '__main__':
     makeHTML()
 
     makePDF()
+
+    addCoverpage()
 
     protectPDF()
 
