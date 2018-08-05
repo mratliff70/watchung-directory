@@ -73,11 +73,27 @@ def makeHTML():
                 outfile.write('%s<br>\n%s, %s %s<br>\n' % (row[11], row[12], row[13], row[14]))
 
                 # Print 1st person's info name: phone number, e-mail
-                outfile.write('%s: %s %s<br>\n' % (row[1], row[3], row[2]))
+                outfile.write('%s: %s \n' % (row[1], row[3]))
+
+                # If the 1st person has an e-mail address
+                if row[2]:
+                    outfile.write('<a href="mailto:%s">%s</a>' % (row[2], row[2]))
+
+                outfile.write('<br>\n')
 
                 # Print 2nd person's info if there is any
-                if row[7] and (row[9] or row[8]):
-                    outfile.write('%s: %s %s<br>\n' % (row[7], row[9], row[8]))
+                if row[7] and (row[8] or row[9]):
+                    outfile.write('%s: \n' % row[7])
+
+                    # If the 2nd person has a phone number
+                    if row[9]:
+                        outfile.write('%s ' % row[9])
+
+                    # If the 2nd person has an e-mail address
+                    if row[8]:
+                        outfile.write('<a href="mailto:%s">%s</a>\n' % (row[8], row[8]))
+
+                    outfile.write('<br>\n')
 
 
                 outfile.write('<br></li>')
