@@ -1,8 +1,8 @@
 """
-Shows basic usage of the Sheets API. Prints values from a Google Spreadsheet.
+Generates PDF membership directory from data in Google Sheet
 """
 from __future__ import print_function
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file as oauth_file, client, tools
 import pdfkit
@@ -10,20 +10,46 @@ from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
 import boto3
 import os
 
-# Setup the Sheets API
-SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
-store = oauth_file.Storage('token.json')
-creds = store.get()
-if not creds or creds.invalid:
-    flow = client.flow_from_clientsecrets('credentials.json', SCOPES)
-    creds = tools.run_flow(flow, store)
-service = build('sheets', 'v4', http=creds.authorize(Http()))
+
+#### Global variables
+
+gservice = None
+
+s3bucketname = 'watchungairstream'
+credentialsfile = 'credentials.json'
+tokenfile = 'token.json'
 
 # Get ID of Google Sheet from environment variable
 GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
 
 # Get password for PDF
 PDF_PASSWORD = os.getenv('PDF_PASSWORD')
+
+
+def setGoogleService():
+
+    global gservice
+
+    # Get Google credentials and token from S3 bucket
+    s3resource = boto3.resource('s3')
+
+    s3resource.meta.client.download_file(s3bucketname, credentialsfile, credentialsfile)
+    s3resource.meta.client.download_file(s3bucketname,tokenfile, tokenfile)
+
+    # Setup the Sheets API
+    SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
+
+    store = oauth_file.Storage(tokenfile)
+    creds = store.get()
+
+    # If credentials could not be loaded from token file
+    if not creds or creds.invalid:
+        flow = client.flow_from_clientsecrets(credentialsfile, SCOPES)
+        creds = tools.run_flow(flow, store)
+
+    gservice = build('sheets', 'v4', http=creds.authorize(Http()))
+
+
 
 def makeHTML():
     """
@@ -36,7 +62,7 @@ def makeHTML():
 
 
     # Get the data
-    result = service.spreadsheets().values().get(spreadsheetId=GOOGLE_SHEET_ID,
+    result = gservice.spreadsheets().values().get(spreadsheetId=GOOGLE_SHEET_ID,
                                                  range=RANGE_NAME).execute()
 
     #TODO: If no data was found, we should probably raise an exception!!
@@ -157,10 +183,16 @@ def uploadToS3():
     s3resource = boto3.resource('s3')
 
     sourcefile = './secure_directory.pdf'
-    s3bucketname = 'watchungairstream'
+
     targetfile = 'WatchungMemberDirectory.pdf'
 
+    # Upload the PDF
     s3resource.meta.client.upload_file(sourcefile, s3bucketname, targetfile, ExtraArgs={'ACL':'public-read'})
+
+    # Upload the
+    s3resource.meta.client.upload_file(tokenfile, s3bucketname, tokenfile)
+    s3resource.meta.client.upload_file(credentialsfile, s3bucketname, credentialsfile)
+
 
 
 #######
@@ -168,6 +200,8 @@ def uploadToS3():
 #######
 
 if __name__ == '__main__':
+
+    setGoogleService()
 
     makeHTML()
 
