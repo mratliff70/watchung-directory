@@ -20,8 +20,4 @@ WORKDIR /data
 
 ADD makedirectory.py /data/
 
-ADD token.json /data/
-
-ADD credentials.json /data/
-
 ENTRYPOINT ["python", "makedirectory.py"]

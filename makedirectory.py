@@ -15,9 +15,12 @@ import os
 
 gservice = None
 
+s3resource = boto3.resource('s3')
+
 s3bucketname = 'watchungairstream'
 credentialsfile = 'credentials.json'
 tokenfile = 'token.json'
+coverpagefile = '2018CoverPage.pdf'
 
 # Get ID of Google Sheet from environment variable
 GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
@@ -31,7 +34,6 @@ def setGoogleService():
     global gservice
 
     # Get Google credentials and token from S3 bucket
-    s3resource = boto3.resource('s3')
 
     s3resource.meta.client.download_file(s3bucketname, credentialsfile, credentialsfile)
     s3resource.meta.client.download_file(s3bucketname,tokenfile, tokenfile)
@@ -144,7 +146,9 @@ def addCoverpage():
     """
     pdf_merger = PdfFileMerger()
 
-    pdf_merger.append('./2018CoverPage.pdf')
+    s3resource.meta.client.download_file(s3bucketname, coverpagefile, coverpagefile)
+
+    pdf_merger.append(coverpagefile)
     pdf_merger.append('./directory.pdf')
 
     with open('./directorywcover.pdf', 'wb') as fileobj:
@@ -180,7 +184,7 @@ def uploadToS3():
     :return:
     """
 
-    s3resource = boto3.resource('s3')
+
 
     sourcefile = './secure_directory.pdf'
 
