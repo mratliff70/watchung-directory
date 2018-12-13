@@ -60,7 +60,7 @@ def makeHTML():
     """
 
     # The range of cells containing member data
-    RANGE_NAME = 'Members!A2:U100'
+    RANGE_NAME = 'Members!A2:V100'
 
 
     # Get the data
@@ -84,18 +84,24 @@ def makeHTML():
 
         for row in values:
 
-            if row[20] == 'Yes':
+            if row[21] == 'Yes':
 
                 # Print the names
                 # If the second member's first name is present without a last name, then we assume the last name is the same
                 if row[7] and not row[6]:
-                    outfile.write('<li><b> %s & %s %s</b><br>\n' % (row[1], row[7], row[0]))
+                    outfile.write('<li><b> %s & %s %s' % (row[1], row[7], row[0]))
                 # If the second member's first and last name are present
                 elif row[7] and row[6]:
-                    outfile.write('<li><b> %s %s & %s %s</b><br>\n' % (row[1], row[0], row[7], row[6]))
+                    outfile.write('<li><b> %s %s & %s %s' % (row[1], row[0], row[7], row[6]))
                 # Otherwise, just print the first person's name
                 else:
-                    outfile.write('<li><b> %s %s</b><br>\n' % (row[1], row[0]))
+                    outfile.write('<li><b> %s %s</b>' % (row[1], row[0]))
+
+                # Print WBCCI number on same line as names
+                if row[19]:
+                    outfile.write(' <font color="red">%s</font>\n' % row[19])
+
+                outfile.write('</b><br>\n')
 
                 # Print the address
                 outfile.write('%s<br>\n%s, %s %s<br>\n' % (row[11], row[12], row[13], row[14]))
