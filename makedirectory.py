@@ -84,7 +84,8 @@ def makeHTML():
 
         for row in values:
 
-            if row[21] == 'Yes':
+            # If there is a value and value is 'Yes"
+            if len(row) == 22 and row[21] and row[21] == 'Yes':
 
                 # Print the names
                 # If the second member's first name is present without a last name, then we assume the last name is the same
