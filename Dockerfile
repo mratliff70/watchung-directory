@@ -14,6 +14,8 @@ RUN apk --no-cache update && \
     pip --no-cache-dir install boto3
     #pip --no-cache-dir install apiclient && \
 
+# Make the directory where our script will be stored
+
 RUN mkdir /data
 
 WORKDIR /data
