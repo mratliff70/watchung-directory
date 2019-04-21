@@ -9,6 +9,7 @@ import pdfkit
 from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
 import boto3
 import os
+import datetime
 
 
 #### Global variables
@@ -80,7 +81,7 @@ def makeHTML():
         outfile.write('<style> li { font-size: 20px; } </style>\n')
 
         # Start the list
-        outfile.write('<ul>\n')
+        outfile.write('<p><ul>\n')
 
         for row in values:
 
@@ -133,8 +134,15 @@ def makeHTML():
 
                 outfile.write('<br></li>')
 
+        # Close the list
+        outfile.write('</ul></p>')
 
-        outfile.write('</ul></body></html>')
+        # Print the current date and time
+        timenow = datetime.datetime.now()
+        outfile.write('<p>This directory was created on: %s</p>' % timenow)
+
+        # close the page
+        outfile.write('</body></html>')
         outfile.close()
 
 
@@ -190,8 +198,6 @@ def uploadToS3():
     This function uploads the PDF to S3
     :return:
     """
-
-
 
     sourcefile = './secure_directory.pdf'
 
