@@ -2,19 +2,26 @@
 Generates PDF membership directory from data in Google Sheet
 """
 from __future__ import print_function
+import os
+import io
+import datetime
+# Import Google libraries
 from googleapiclient.discovery import build
-from httplib2 import Http
-from oauth2client import file as oauth_file, client, tools
+from googleapiclient.http import MediaIoBaseDownload
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+# Import PDF libraries
 import pdfkit
 from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
+# Import AWS library
 import boto3
-import os
-import datetime
 
 
 #### Global variables
 
-gservice = None
+sheets_service = None
+drive_service = None
 
 s3resource = boto3.resource('s3')
 
@@ -32,25 +39,39 @@ PDF_PASSWORD = os.getenv('PDF_PASSWORD')
 
 def setGoogleService():
 
-    global gservice
+    global sheets_service
+    global drive_service
 
     # Get Google credentials and token from S3 bucket
 
     s3resource.meta.client.download_file(s3bucketname, credentialsfile, credentialsfile)
-    s3resource.meta.client.download_file(s3bucketname,tokenfile, tokenfile)
+    #s3resource.meta.client.download_file(s3bucketname,tokenfile, tokenfile)
 
     # Setup the Sheets API
-    SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/drive.readonly']
 
-    store = oauth_file.Storage(tokenfile)
-    creds = store.get()
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists(tokenfile):
+        creds = Credentials.from_authorized_user_file(tokenfile, SCOPES)
 
-    # If credentials could not be loaded from token file
-    if not creds or creds.invalid:
-        flow = client.flow_from_clientsecrets(credentialsfile, SCOPES)
-        creds = tools.run_flow(flow, store)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                credentialsfile, SCOPES)
+            creds = flow.run_console()
+        # Save the credentials for the next run
+        with open(tokenfile, 'w') as token:
+            token.write(creds.to_json())
 
-    gservice = build('sheets', 'v4', http=creds.authorize(Http()))
+    sheets_service = build('sheets', 'v4', credentials=creds)
+
+    drive_service = build('drive', 'v3', credentials=creds)
 
 
 
@@ -65,7 +86,7 @@ def makeHTML():
 
 
     # Get the data
-    result = gservice.spreadsheets().values().get(spreadsheetId=GOOGLE_SHEET_ID,
+    result = sheets_service.spreadsheets().values().get(spreadsheetId=GOOGLE_SHEET_ID,
                                                  range=RANGE_NAME).execute()
 
     #TODO: If no data was found, we should probably raise an exception!!
@@ -135,8 +156,16 @@ def makeHTML():
                 if len(row) > 22 and row[22]:
                     #TODO: Download file from Google Drive
 
+                    request = drive_service.files().get_media(fileId=row[22])
+                    local_file = "/data/" + row[22]
+                    fh = io.FileIO(local_file, mode='wb')
+                    downloader = MediaIoBaseDownload(fh, request)
+                    done = False
+                    while done is False:
+                        status, done = downloader.next_chunk()
+
                     # Insert image into HTML
-                    outfile.write('<br><br><img src="/data/logo.png" style="width:250px;height:250px;"')
+                    outfile.write('<br><br><img src="/data/' + row[22] + '" style="width:250px;height:250px;"')
 
                 # If there is no picture available, insert placeholder image
                 else:
