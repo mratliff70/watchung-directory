@@ -61,7 +61,7 @@ def makeHTML():
     """
 
     # The range of cells containing member data
-    RANGE_NAME = 'Members!A2:V100'
+    RANGE_NAME = 'Members!A2:W100'
 
 
     # Get the data
@@ -86,7 +86,7 @@ def makeHTML():
         for row in values:
 
             # If there is a value and value is 'Yes"
-            if len(row) == 22 and row[21] and row[21] == 'Yes':
+            if len(row) > 21 and row[21] and row[21] == 'Yes':
 
                 # Print the names
                 # If the second member's first name is present without a last name, then we assume the last name is the same
@@ -131,8 +131,19 @@ def makeHTML():
 
                     outfile.write('<br>\n')
 
+                # Insert picture if there is one
+                if len(row) > 22 and row[22]:
+                    #TODO: Download file from Google Drive
 
-                outfile.write('<br></li>')
+                    # Insert image into HTML
+                    outfile.write('<br><br><img src="/data/logo.png" style="width:250px;height:250px;"')
+
+                # If there is no picture available, insert placeholder image
+                else:
+
+                    outfile.write('<br><br><img src="/data/logo.png"')
+
+                outfile.write('<br><br><br><br><br><br></li>')
 
         # Close the list
         outfile.write('</ul></p>')
@@ -152,7 +163,14 @@ def makePDF():
     :return:
     """
 
-    pdfkit.from_file('./directory.html', './directory.pdf')
+    # Allow pdfkit to access member photos downloaded locally
+    pdfkitoptions = {
+        'enable-local-file-access': '',
+    }
+
+    #NOTE: Investigated using the "cover" option https://pypi.org/project/pdfkit/ but got error loading cover page.  Gave up.
+
+    pdfkit.from_file('./directory.html', './directory.pdf', options=pdfkitoptions)
 
 def addCoverpage():
     """
@@ -224,8 +242,8 @@ if __name__ == '__main__':
 
     makePDF()
 
-    addCoverpage()
+#    addCoverpage()
 
-    protectPDF()
+#    protectPDF()
 
-    uploadToS3()
+#    uploadToS3()

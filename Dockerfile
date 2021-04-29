@@ -1,6 +1,6 @@
 # Taken from https://hub.docker.com/r/garland/aws-cli-docker/~/dockerfile/
 
-FROM surnet/alpine-python-wkhtmltopdf:3.6.5-0.12.5-small
+FROM surnet/alpine-python-wkhtmltopdf:3.9.2-0.12.6-small
 
 RUN apk --no-cache update && \
     # Upgrade pip
