@@ -1,5 +1,6 @@
 """
 Generates PDF membership directory from data in Google Sheet
+Includes member photos stored in Google Drive
 """
 from __future__ import print_function
 import os
@@ -32,6 +33,8 @@ coverpagefile = '2018CoverPage.pdf'
 
 # Get ID of Google Sheet from environment variable
 GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
+# The range of cells containing member data
+GOOGLE_SHEET_RANGE = os.getenv('GOOGLE_SHEET_RANGE')
 
 # Get password for PDF
 PDF_PASSWORD = os.getenv('PDF_PASSWORD')
@@ -45,7 +48,7 @@ def setGoogleService():
     # Get Google credentials and token from S3 bucket
 
     s3resource.meta.client.download_file(s3bucketname, credentialsfile, credentialsfile)
-    #s3resource.meta.client.download_file(s3bucketname,tokenfile, tokenfile)
+    s3resource.meta.client.download_file(s3bucketname,tokenfile, tokenfile)
 
     # Setup the Sheets API
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/drive.readonly']
@@ -81,13 +84,12 @@ def makeHTML():
     :return:
     """
 
-    # The range of cells containing member data
-    RANGE_NAME = 'Members!A2:W100'
+
 
 
     # Get the data
     result = sheets_service.spreadsheets().values().get(spreadsheetId=GOOGLE_SHEET_ID,
-                                                 range=RANGE_NAME).execute()
+                                                 range=GOOGLE_SHEET_RANGE).execute()
 
     #TODO: If no data was found, we should probably raise an exception!!
     values = result.get('values', [])
@@ -154,7 +156,6 @@ def makeHTML():
 
                 # Insert picture if there is one
                 if len(row) > 22 and row[22]:
-                    #TODO: Download file from Google Drive
 
                     request = drive_service.files().get_media(fileId=row[22])
                     local_file = "/data/" + row[22]
@@ -165,7 +166,8 @@ def makeHTML():
                         status, done = downloader.next_chunk()
 
                     # Insert image into HTML
-                    outfile.write('<br><br><img src="/data/' + row[22] + '" style="width:250px;height:250px;"')
+                    #outfile.write('<br><br><img src="/data/' + row[22] + '" style="width:250px;height:250px;"')
+                    outfile.write('<br><br><img src="/data/' + row[22] + '"/>')
 
                 # If there is no picture available, insert placeholder image
                 else:
