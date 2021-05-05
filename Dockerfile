@@ -8,9 +8,11 @@ RUN apk --no-cache update && \
     # Install required Python modules
     pip --no-cache-dir install PyPDF2 && \
     pip --no-cache-dir install pdfkit && \
-    pip --no-cache-dir install httplib2  && \
-    pip --no-cache-dir install oauth2client  && \
+    #pip --no-cache-dir install httplib2  && \
+    #pip --no-cache-dir install oauth2client  && \
     pip --no-cache-dir install google-api-python-client && \
+    pip --no-cache-dir install google-auth-httplib2 && \
+    pip --no-cache-dir install google-auth-oauthlib &&\
     pip --no-cache-dir install boto3
     #pip --no-cache-dir install apiclient && \
 
