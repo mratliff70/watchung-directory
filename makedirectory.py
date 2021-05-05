@@ -29,7 +29,6 @@ s3resource = boto3.resource('s3')
 s3bucketname = 'watchungairstream'
 credentialsfile = 'credentials.json'
 tokenfile = 'token.json'
-coverpagefile = '2018CoverPage.pdf'
 
 # Get ID of Google Sheet from environment variable
 GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
@@ -46,7 +45,7 @@ def setGoogleService():
     global drive_service
 
     # Get Google credentials and token from S3 bucket
-
+    #TODO:  We should really be getting these from AWS Secrets Vault
     s3resource.meta.client.download_file(s3bucketname, credentialsfile, credentialsfile)
     s3resource.meta.client.download_file(s3bucketname,tokenfile, tokenfile)
 
@@ -166,7 +165,6 @@ def makeHTML():
                         status, done = downloader.next_chunk()
 
                     # Insert image into HTML
-                    #outfile.write('<br><br><img src="/data/' + row[22] + '" style="width:250px;height:250px;"')
                     outfile.write('<br><br><img src="/data/' + row[22] + '"/>')
 
                 # If there is no picture available, insert placeholder image
@@ -208,6 +206,14 @@ def addCoverpage():
     Add coverpage to PDF
     :return:
     """
+
+    # If GOOGLE_SHEET_RANGE begins with Members, then this is the current members directory
+    if GOOGLE_SHEET_RANGE.startswith("Members"):
+        coverpagefile = 'CoverPageMembers.pdf'
+    # Otherwise this must be the past members directory
+    else:
+        coverpagefile = 'CoverPagePastMembers.pdf'
+
     pdf_merger = PdfFileMerger()
 
     s3resource.meta.client.download_file(s3bucketname, coverpagefile, coverpagefile)
@@ -250,12 +256,17 @@ def uploadToS3():
 
     sourcefile = './secure_directory.pdf'
 
-    targetfile = 'WatchungMemberDirectory.pdf'
+    # If GOOGLE_SHEET_RANGE begins with Members, then this is the current members directory
+    if GOOGLE_SHEET_RANGE.startswith("Members"):
+        targetfile = 'WatchungMemberDirectory.pdf'
+    # Otherwise this must be the past members directory
+    else:
+        targetfile = 'WatchungPastMemberDirectory.pdf'
 
     # Upload the PDF
     s3resource.meta.client.upload_file(sourcefile, s3bucketname, targetfile, ExtraArgs={'ACL':'public-read'})
 
-    # Upload the
+    # Upload the token and credentials files
     s3resource.meta.client.upload_file(tokenfile, s3bucketname, tokenfile)
     s3resource.meta.client.upload_file(credentialsfile, s3bucketname, credentialsfile)
 
@@ -273,8 +284,8 @@ if __name__ == '__main__':
 
     makePDF()
 
-#    addCoverpage()
+    addCoverpage()
 
-#    protectPDF()
+    protectPDF()
 
-#    uploadToS3()
+    uploadToS3()
