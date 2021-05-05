@@ -29,6 +29,7 @@ s3resource = boto3.resource('s3')
 s3bucketname = 'watchungairstream'
 credentialsfile = 'credentials.json'
 tokenfile = 'token.json'
+photoplaceholderfile = 'photoplaceholder.png'
 
 # Get ID of Google Sheet from environment variable
 GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
@@ -83,9 +84,6 @@ def makeHTML():
     :return:
     """
 
-
-
-
     # Get the data
     result = sheets_service.spreadsheets().values().get(spreadsheetId=GOOGLE_SHEET_ID,
                                                  range=GOOGLE_SHEET_RANGE).execute()
@@ -96,6 +94,10 @@ def makeHTML():
         print('No data found.')
 
     else:
+        # Download photoplaceholder
+        # 
+        s3resource.meta.client.download_file(s3bucketname, photoplaceholderfile, photoplaceholderfile)
+
         outfile = open('./directory.html', 'w')
         outfile.write('<html><body>\n')
 
