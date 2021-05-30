@@ -85,8 +85,7 @@ def makeHTML():
     """
 
     # Get the data
-    result = sheets_service.spreadsheets().values().get(spreadsheetId=GOOGLE_SHEET_ID,
-                                                 range=GOOGLE_SHEET_RANGE).execute()
+    result = sheets_service.spreadsheets().values().get(spreadsheetId=GOOGLE_SHEET_ID, range=GOOGLE_SHEET_RANGE).execute()
 
     #TODO: If no data was found, we should probably raise an exception!!
     values = result.get('values', [])
