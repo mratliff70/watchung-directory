@@ -6,10 +6,12 @@ from __future__ import print_function
 import os
 import io
 import datetime
+import json
+import sys
 # Import Google libraries
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 # Import PDF libraries
@@ -24,7 +26,8 @@ import boto3
 sheets_service = None
 drive_service = None
 
-s3resource = boto3.resource('s3')
+session = boto3.session.Session()
+s3resource = session.resource('s3')
 
 s3bucketname = 'watchungairstream'
 credentialsfile = 'credentials.json'
@@ -45,32 +48,24 @@ def setGoogleService():
     global sheets_service
     global drive_service
 
-    # Get Google credentials and token from S3 bucket
-    #TODO:  We should really be getting these from AWS Secrets Vault
-    s3resource.meta.client.download_file(s3bucketname, credentialsfile, credentialsfile)
-    s3resource.meta.client.download_file(s3bucketname,tokenfile, tokenfile)
+    # Retrieve the GCP service account secret from AWS secrets manager 
+    secret_name = "watchung-directoryfiles-access"
+    region_name = "us-east-1"
 
-    # Setup the Sheets API
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/drive.readonly']
+    # Create an AWS Secrets Manager client
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
 
-    creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists(tokenfile):
-        creds = Credentials.from_authorized_user_file(tokenfile, SCOPES)
+    get_secret_value_response = client.get_secret_value(SecretId=secret_name)
 
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                credentialsfile, SCOPES)
-            creds = flow.run_console()
-        # Save the credentials for the next run
-        with open(tokenfile, 'w') as token:
-            token.write(creds.to_json())
+    # Load the response into JSON dictionary
+    secret = json.loads(get_secret_value_response['SecretString'])
+    # extract the credentials: value node from the response
+    info = json.loads(secret['credentials'])
+
+    creds = service_account.Credentials.from_service_account_info(info)
 
     sheets_service = build('sheets', 'v4', credentials=creds)
 
@@ -158,7 +153,7 @@ def makeHTML():
                 if len(row) > 22 and row[22]:
 
                     request = drive_service.files().get_media(fileId=row[22])
-                    local_file = "/data/" + row[22]
+                    local_file = "./data/" + row[22]
                     fh = io.FileIO(local_file, mode='wb')
                     downloader = MediaIoBaseDownload(fh, request)
                     done = False
@@ -166,12 +161,12 @@ def makeHTML():
                         status, done = downloader.next_chunk()
 
                     # Insert image into HTML
-                    outfile.write('<br><br><img src="/data/' + row[22] + '"/>')
+                    outfile.write('<br><br><img src="./data/' + row[22] + '"/>')
 
                 # If there is no picture available, insert placeholder image
                 else:
 
-                    outfile.write('<br><br><img src="/data/logo.png"')
+                    outfile.write('<br><br><img src="./data/logo.png"')
 
                 outfile.write('<br><br><br><br><br><br></li>')
 
