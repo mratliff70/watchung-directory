@@ -148,7 +148,7 @@ def makeHTML():
                 if len(row) > 22 and row[22]:
 
                     request = drive_service.files().get_media(fileId=row[22])
-                    local_file = "./data/" + row[22]
+                    local_file = "./" + row[22]
                     fh = io.FileIO(local_file, mode='wb')
                     downloader = MediaIoBaseDownload(fh, request)
                     done = False
@@ -156,12 +156,12 @@ def makeHTML():
                         status, done = downloader.next_chunk()
 
                     # Insert image into HTML
-                    outfile.write('<br><br><img src="./data/' + row[22] + '"/>')
+                    outfile.write('<br><br><img src="./' + row[22] + '"/>')
 
                 # If there is no picture available, insert placeholder image
                 else:
 
-                    outfile.write('<br><br><img src="./data/logo.png"')
+                    outfile.write('<br><br><img src="./"' + photoplaceholderfile + '"/>')
 
                 outfile.write('<br><br><br><br><br><br></li>')
 
