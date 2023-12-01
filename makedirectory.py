@@ -7,13 +7,10 @@ import os
 import io
 import datetime
 import json
-import sys
 # Import Google libraries
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 from google.oauth2 import service_account
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
 # Import PDF libraries
 import pdfkit
 from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
@@ -30,8 +27,6 @@ session = boto3.session.Session()
 s3resource = session.resource('s3')
 
 s3bucketname = 'watchungairstream'
-credentialsfile = 'credentials.json'
-tokenfile = 'token.json'
 photoplaceholderfile = 'photoplaceholder.png'
 
 # Get ID of Google Sheet from environment variable
@@ -62,7 +57,7 @@ def setGoogleService():
 
     # Load the response into JSON dictionary
     secret = json.loads(get_secret_value_response['SecretString'])
-    # extract the credentials: value node from the response
+    # extract the credentials: value node from the dictionary
     info = json.loads(secret['credentials'])
 
     creds = service_account.Credentials.from_service_account_info(info)
@@ -261,11 +256,6 @@ def uploadToS3():
 
     # Upload the PDF
     s3resource.meta.client.upload_file(sourcefile, s3bucketname, targetfile, ExtraArgs={'ACL':'public-read'})
-
-    # Upload the token and credentials files
-    s3resource.meta.client.upload_file(tokenfile, s3bucketname, tokenfile)
-    s3resource.meta.client.upload_file(credentialsfile, s3bucketname, credentialsfile)
-
 
 
 #######
