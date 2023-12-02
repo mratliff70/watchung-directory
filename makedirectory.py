@@ -13,7 +13,7 @@ from googleapiclient.http import MediaIoBaseDownload
 from google.oauth2 import service_account
 # Import PDF libraries
 import pdfkit
-from PyPDF2 import PdfFileReader, PdfFileWriter, PdfFileMerger
+from PyPDF2 import PdfReader, PdfWriter, PdfMerger
 # Import AWS library
 import boto3
 
@@ -161,7 +161,7 @@ def makeHTML():
                 # If there is no picture available, insert placeholder image
                 else:
 
-                    outfile.write('<br><br><img src="./"' + photoplaceholderfile + '"/>')
+                    outfile.write('<br><br><img src="./' + photoplaceholderfile + '"/>')
 
                 outfile.write('<br><br><br><br><br><br></li>')
 
@@ -183,14 +183,11 @@ def makePDF():
     :return:
     """
 
-    # Allow pdfkit to access member photos downloaded locally
-    pdfkitoptions = {
-        'enable-local-file-access': '',
-    }
 
     #NOTE: Investigated using the "cover" option https://pypi.org/project/pdfkit/ but got error loading cover page.  Gave up.
+    # Allow pdfkit to access local files by including in options
 
-    pdfkit.from_file('./directory.html', './directory.pdf', options=pdfkitoptions)
+    pdfkit.from_file('./directory.html', './directory.pdf', options={"enable-local-file-access": ""})
 
 def addCoverpage():
     """
@@ -205,7 +202,7 @@ def addCoverpage():
     else:
         coverpagefile = 'CoverPagePastMembers.pdf'
 
-    pdf_merger = PdfFileMerger()
+    pdf_merger = PdfMerger()
 
     s3resource.meta.client.download_file(s3bucketname, coverpagefile, coverpagefile)
 
@@ -223,13 +220,13 @@ def protectPDF():
     """
 
     in_file = open("./directorywcover.pdf", "rb")
-    input_pdf = PdfFileReader(in_file)
+    input_pdf = PdfReader(in_file)
 
-    numpages = input_pdf.getNumPages()
+    numpages = len(input_pdf.pages)
     print ("Number of pages in PDF = %s" % numpages)
 
-    output_pdf = PdfFileWriter()
-    output_pdf.appendPagesFromReader(input_pdf)
+    output_pdf = PdfWriter()
+    output_pdf.append_pages_from_reader(input_pdf)
     output_pdf.encrypt(PDF_PASSWORD)
 
     out_file = open("./secure_directory.pdf", "wb")

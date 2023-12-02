@@ -1,6 +1,10 @@
 # Taken from https://hub.docker.com/r/garland/aws-cli-docker/~/dockerfile/
 
-FROM surnet/alpine-python-wkhtmltopdf:3.9.2-0.12.6-small
+# To build for Linux
+FROM surnet/alpine-python-wkhtmltopdf:3.11.4-0.12.6-small
+
+# To build image for Mac M1 chip architecture
+#FROM surnet/alpine-python-wkhtmltopdf:3.11.4-0.12.6-small@sha256:3162e6df62d102daadffe43847b600065e4059dea4e9dc446bb81cea8e62cec7
 
 RUN apk --no-cache update && \
     # Upgrade pip
